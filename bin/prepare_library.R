@@ -17,6 +17,16 @@ gene_controls <- args[2] # pattern for control barcodes, default: "" aka empty s
 
 # read and process fasta file
 ## Install Biostrings if not available
+# add library dir for additional packages
+homedir <- system("echo ${HOME}", intern = TRUE)
+libdir <- .libPaths()
+if (any(grepl(homedir, libdir))) {
+  pkdir <- grep(homedir, libdir, value = TRUE)
+} else {
+  pkdir <- paste0(homedir, "/.R")
+  system(paste0("mkdir ", pkdir))
+  .libPaths(new = pkdir)
+}
 list_bioc_packages <- c("Biostrings")
 list_to_install <- setdiff(list_bioc_packages, rownames(installed.packages()))
 if (length(list_to_install)) {
