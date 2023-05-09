@@ -16,25 +16,43 @@ fasta_file <- args[1] # path to fasta file, mandatory
 gene_controls <- args[2] # pattern for control barcodes, default: "" aka empty string
 
 # read and process fasta file
-fasta_df <- read.delim(fasta_file, header = FALSE)
+## Install Biostrings if not available
+list_bioc_packages <- c("Biostrings")
+list_to_install <- setdiff(list_bioc_packages, rownames(installed.packages()))
+if (length(list_to_install)) {
+  message(paste0("Missing package(s) ", paste(list_to_install, collapse = ", "), " are installed to '", pkdir, "'."))
+  install.packages(pkgs = "BiocManager", lib = pkdir, repos = "https://cloud.r-project.org")
+  BiocManager::install(
+    pkgs = list_to_install, lib = pkdir,
+    update = FALSE, ask = FALSE
+  )
+}
+
+library(Biostrings)
+## parse fasta file with Biostrings function to ensure error handling / ensuring that really fasta format etc.
+fasta_df = readDNAStringSet(fasta_file)
 saf_df <- data.frame(
-    GeneID = fasta_df[seq(1, nrow(fasta_df), 2), 1],
-    Sequence = fasta_df[seq(2, nrow(fasta_df), 2), 1]
+  GeneID = names(fasta_df),
+  Sequence = paste(fasta_df)
 )
 
 # check for duplications
-stopifnot(!any(duplicated(fasta_df$GeneID)))
-stopifnot(!any(duplicated(fasta_df$Sequence)))
+stopifnot(!any(duplicated(saf_df$GeneID)))
+stopifnot(!any(duplicated(saf_df$Sequence)))
 
 # add remaining columns
-saf_df$GeneID <- gsub(">", "", saf_df$GeneID)
 saf_df$Chr <- saf_df$GeneID
 saf_df$Start <- 1
 saf_df$End <- sapply(saf_df$Sequence, nchar)
 saf_df$Strand <- "*"
 saf_df <- saf_df[c("GeneID", "Chr", "Start", "End", "Strand", "Sequence")]
 
-saf_name <- gsub("fasta$", "saf", basename(fasta_file))
+# replace file ending by .saf (everything after last . in file name is interpreted as file ending) - if there is no file ending, append ".saf"
+if (length(strsplit(fasta_file, "\\.")[[1]][-1])) {
+  saf_name <- gsub(strsplit(fasta_file, "\\.")[[1]][-1], "saf", basename(fasta_file))
+} else {
+  saf_name <- paste(fasta_file, ".saf", sep="")
+}
 write.table(
     x = saf_df, file = saf_name, sep = "\t", row.names = FALSE,
     col.names = FALSE, quote = FALSE
