@@ -296,10 +296,12 @@ df_auc %>%
 ## Sample and replicate correlation coefficent (R)
 
 ```{r, fig.width = 7.5, fig.height = 7, warning = FALSE}
-df_counts %>%
+df_correlation <- df_counts %>%
     tidyr::pivot_wider(names_from = "sample", values_from = "n_reads") %>%
     dplyr::select(-c(1:2)) %>%
-    cor() %>%
+    cor()
+write.csv(df_correlation, "correlation_samples.csv")
+p_correlation <- df_correlation %>%
     dplyr::as_tibble() %>%
     dplyr::mutate(sample1 = colnames(.)) %>%
     tidyr::pivot_longer(
@@ -316,6 +318,8 @@ df_counts %>%
         colours = c(custom_colors[1], grey(0.9), custom_colors[2]),
         limits = c(-1, 1)
     )
+p_correlation
+ggsave("correlation_samples.pdf", plot=p_correlation)
 ```
 
 ## Sample and replicate similarity with PCA
@@ -332,7 +336,7 @@ pca_result <- df_counts %>%
 df_PCA <- pca_result$x %>%
     as_tibble(rownames = "sample")
 
-df_PCA %>%
+p_pca <- df_PCA %>%
     ggplot(aes(x = PC1, y = -PC2, size = PC3, color = sample, label = sample)) +
     geom_point(alpha = 0.7) +
     geom_text(size = 2.5, show.legend = FALSE) +
@@ -343,6 +347,8 @@ df_PCA %>%
     custom_theme(legend.position = "none", aspect.ratio = 1) +
     scale_color_manual(values = colorRampPalette(custom_colors)(nrow(df_PCA))) +
     guides(size = "none")
+p_pca
+ggsave("PCA_samples.pdf", plot=p_pca)
 ```
 
 # Report info
